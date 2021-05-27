@@ -92,6 +92,9 @@ if __name__ == "__main__":
     else: #listen from the particle channel
         particle_subscribe(run_location, PARTICLE_DEVICE_LOCATOR_EVENT)
         # particle_subscribe(echo_event, "spark")
+        # particle_subscribe(echo_event, "SYSTEM_ERROR")
+        # particle_subscribe(echo_event, "SENSOR_DATA")
+        # particle_subscribe(echo_event, "ERROR")
 
 
     
