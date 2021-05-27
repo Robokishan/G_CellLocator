@@ -13,7 +13,7 @@ PARTICLE_CLOUD = "https://api.particle.io"
 PARTICLE_CLOUD_EVENT = PARTICLE_CLOUD+"/v1/devices/events"
 PARTICLE_DEVICE = PARTICLE_CLOUD+"/v1/devices/"
 PARTICLE_ACCESS_TOKEN = os.getenv('PARTICLE_ACCESS_TOKEN', "test")
-PARTICLE_EVENT_NAME = "deviceLocator"
+PARTICLE_DEVICE_LOCATOR_EVENT = "deviceLocator"
 
 def getLocation(cell_tower_info):
     x = requests.post(GOOGLE_API, params={"key":GOOGLE_API_KEY}, json = cell_tower_info)
@@ -50,11 +50,9 @@ def convert_from_particle_format(particle_format):
 
 def particle_subscribe(callback,event):
     if len(PARTICLE_ACCESS_TOKEN) > 1:
-        url = f"{PARTICLE_CLOUD_EVENT}"
-        if len(event) > 1:
-            url+=f"/{event}"
+        url=f"{PARTICLE_CLOUD_EVENT}/{event}"
         print(f"Listeing on {url}")
-        r = requests.get(url, params= { "access_token": PARTICLE_ACCESS_TOKEN } ,stream=True)
+        r = requests.get(url, params= { "access_token": PARTICLE_ACCESS_TOKEN }, stream=True)
         for chunk in r.iter_content(chunk_size=1024):
             _event = chunk.decode('utf8').replace("'", '"')
             _event = _event.split("\n")
@@ -77,16 +75,23 @@ def run_location(event_response):
         device = get_device(event_data['coreid'])
         print(f"Name :{device['name']} {location['location']['lat']},{location['location']['lng']} Location: {location}")
 
-if __name__ == "__main__":
+def echo_event(event_response):
+    if len(event_response[0].split(": ")) > 1:
+        event_name = event_response[0].split(": ")[1]
+        event_data = event_response[1].split(": ")[1]
+        event_data = json.loads(event_data)
+        device_name = get_device(event_data['coreid'])['name']
+        print(f"{event_name} | {device_name} | {event_data}")
 
+if __name__ == "__main__":
     # Get data from argument json
     if len(sys.argv) > 1:
         data = json.loads(sys.argv[1])
         data = convert_from_particle_format(data)
         getLocation(data)
     else: #listen from the particle channel
-        particle_cloud = None
-        particle_subscribe(run_location, PARTICLE_EVENT_NAME)
+        particle_subscribe(run_location, PARTICLE_DEVICE_LOCATOR_EVENT)
+        # particle_subscribe(echo_event, "spark")
 
 
     
