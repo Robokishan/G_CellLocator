@@ -2,14 +2,17 @@
 import sys,os
 import requests, json
 from traceback import format_exc
+from dotenv import load_dotenv
+
+load_dotenv()
 
 GOOGLE_API = 'https://www.googleapis.com/geolocation/v1/geolocate'
-GOOGLE_API_KEY = "TEST_KEY"
+GOOGLE_API_KEY = os.getenv('GOOGLEMAP_API_KEY', "test")
 
 PARTICLE_CLOUD = "https://api.particle.io"
 PARTICLE_CLOUD_EVENT = PARTICLE_CLOUD+"/v1/devices/events"
 PARTICLE_DEVICE = PARTICLE_CLOUD+"/v1/devices/"
-PARTICLE_ACCESS_TOKEN = "TEST_ACCESS_TOKEN"
+PARTICLE_ACCESS_TOKEN = os.getenv('PARTICLE_ACCESS_TOKEN', "test")
 PARTICLE_EVENT_NAME = "deviceLocator"
 
 def getLocation(cell_tower_info):
