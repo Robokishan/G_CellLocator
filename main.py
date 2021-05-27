@@ -15,15 +15,24 @@ PARTICLE_DEVICE = PARTICLE_CLOUD+"/v1/devices/"
 PARTICLE_ACCESS_TOKEN = os.getenv('PARTICLE_ACCESS_TOKEN', "test")
 PARTICLE_DEVICE_LOCATOR_EVENT = "deviceLocator"
 
+
+UNWIRED_CLOUD = "https://ap1.unwiredlabs.com"
+UNWIRED_GEOLOCATION = f"{UNWIRED_CLOUD}/v2/process.php"
+UNWIRED_ACCESS_TOKEN = os.getenv('UNWIRED_LABS_ACCESS_TOKEN', "test")
+
 def getLocation(cell_tower_info):
     x = requests.post(GOOGLE_API, params={"key":GOOGLE_API_KEY}, json = cell_tower_info)
+    return x.json()
+
+def getUnwiredLocation(cell_tower_info):
+    x = requests.post(UNWIRED_GEOLOCATION, json = cell_tower_info)
     return x.json()
 
 def get_device(macid):
     x = requests.get(PARTICLE_DEVICE+macid, params= { "access_token": PARTICLE_ACCESS_TOKEN })
     return x.json()
 
-def convert_from_particle_format(particle_format):
+def convert_from_particle_format(particle_format,convert_type):
     data = {}
     _is_p_format = False
     try:
@@ -35,18 +44,31 @@ def convert_from_particle_format(particle_format):
     # print(f"Format : { 'Particle' if _is_p_format == True else 'Simple' } ")
     if _is_p_format == True:
         cell_towers = []
-        for towers in particle_format['c']['a']:
-            cell_towers.append({  
-                "cellId": towers['i'], 
-                "locationAreaCode": towers['l'],
-                "mobileCountryCode": towers['c'],   
-                "mobileNetworkCode": towers['n']
-             })
-        data.update({ "cellTowers":cell_towers })
+        if convert_type == "GOOGLE":
+            for towers in particle_format['c']['a']:
+                cell_towers.append({  
+                    "cellId": towers['i'], 
+                    "locationAreaCode": towers['l'],
+                    "mobileCountryCode": towers['c'],   
+                    "mobileNetworkCode": towers['n']
+                })
+            data.update({ "cellTowers":cell_towers })
+        elif convert_type == "UNWIREDLABS":
+            for towers in particle_format['c']['a']:
+                cell_towers.append({  
+                    "radio":"gsm",
+                    "cid": towers['i'], 
+                    "lac": towers['l'],
+                    "mcc": towers['c'],   
+                    "mnc": towers['n']
+                })
+            data.update({
+                "token": UNWIRED_ACCESS_TOKEN,
+                "cells":cell_towers
+            })
     else:
         data = particle_format
     return data
-
 
 def particle_subscribe(callback,event):
     if len(PARTICLE_ACCESS_TOKEN) > 1:
@@ -70,9 +92,11 @@ def run_location(event_response):
         event_data = event_response[1].split(": ")[1]
         event_data = json.loads(event_data)
         cell_tower_data = json.loads(event_data['data'])
-        cell_tower_data = convert_from_particle_format(cell_tower_data)
+        unwiredLocation = getUnwiredLocation(convert_from_particle_format(cell_tower_data,"UNWIREDLABS"))
+        cell_tower_data = convert_from_particle_format(cell_tower_data,"GOOGLE")
         location = getLocation(cell_tower_data)
         device = get_device(event_data['coreid'])
+        print(unwiredLocation)
         print(f"Name :{device['name']} {location['location']['lat']},{location['location']['lng']} Location: {location}")
 
 def echo_event(event_response):
