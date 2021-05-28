@@ -21,7 +21,6 @@ UNWIRED_GEOLOCATION = f"{UNWIRED_CLOUD}/v2/process.php"
 UNWIRED_ACCESS_TOKEN = os.getenv('UNWIRED_LABS_ACCESS_TOKEN', "test")
 
 def getLocation(cell_tower_info):
-    print(cell_tower_info)
     x = requests.post(GOOGLE_API, params={"key":GOOGLE_API_KEY}, json = cell_tower_info)
     return x.json()
 
