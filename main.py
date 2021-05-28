@@ -3,7 +3,7 @@ import sys,os
 import requests, json
 from traceback import format_exc
 from dotenv import load_dotenv
-
+from quectel import Modem as Quectel
 load_dotenv()
 
 GOOGLE_API = 'https://www.googleapis.com/geolocation/v1/geolocate'
@@ -21,6 +21,7 @@ UNWIRED_GEOLOCATION = f"{UNWIRED_CLOUD}/v2/process.php"
 UNWIRED_ACCESS_TOKEN = os.getenv('UNWIRED_LABS_ACCESS_TOKEN', "test")
 
 def getLocation(cell_tower_info):
+    print(cell_tower_info)
     x = requests.post(GOOGLE_API, params={"key":GOOGLE_API_KEY}, json = cell_tower_info)
     return x.json()
 
@@ -92,12 +93,12 @@ def run_location(event_response):
         event_data = event_response[1].split(": ")[1]
         event_data = json.loads(event_data)
         cell_tower_data = json.loads(event_data['data'])
-        unwiredLocation = getUnwiredLocation(convert_from_particle_format(cell_tower_data,"UNWIREDLABS"))
+        # unwiredLocation = getUnwiredLocation(convert_from_particle_format(cell_tower_data,"UNWIREDLABS"))
         cell_tower_data = convert_from_particle_format(cell_tower_data,"GOOGLE")
         location = getLocation(cell_tower_data)
         device = get_device(event_data['coreid'])
-        print(unwiredLocation)
-        print(f"Name :{device['name']} {location['location']['lat']},{location['location']['lng']} Location: {location}")
+        # print(unwiredLocation)
+        print(f"Name :{device['name']} {location['location']['lat']},{location['location']['lng']} Location: {location} Cell: {cell_tower_data} ")
 
 def echo_event(event_response):
     if len(event_response[0].split(": ")) > 1:
@@ -108,7 +109,7 @@ def echo_event(event_response):
         print(f"{event_name} | {device_name} | {event_data}")
 
 if __name__ == "__main__":
-    # Get data from argument json
+    # # Get data from argument json
     if len(sys.argv) > 1:
         data = json.loads(sys.argv[1])
         data = convert_from_particle_format(data)
@@ -120,6 +121,14 @@ if __name__ == "__main__":
         # particle_subscribe(echo_event, "SENSOR_DATA")
         # particle_subscribe(echo_event, "ERROR")
 
+    # to get location of the device using quectel modem
+    qc = Quectel()
+    network_info = qc.retriveNetworkinfo()
+    print(network_info)
+    data = convert_from_particle_format(network_info,"GOOGLE")
+    location = getLocation(data)
+    print(f"{location['location']['lat']},{location['location']['lng']}")
+    
 
     
     
